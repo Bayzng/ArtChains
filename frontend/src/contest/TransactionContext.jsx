@@ -3,7 +3,6 @@ import { ethers } from "ethers";
 import { contractAddress, contractAbi } from "../utils/constants";
 import detectEthereumProvider from "@metamask/detect-provider";
 
-
 export const TransactionContext = createContext();
 
 export const TransactionProvider = ({ children }) => {
@@ -11,19 +10,17 @@ export const TransactionProvider = ({ children }) => {
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
   const [currentAccount, setCurrentAccount] = useState(null);
-  const [metamaskInstalled, setMetamaskInstalled] = useState(false); // Track if MetaMask is installed
+  const [metamaskInstalled, setMetamaskInstalled] = useState(false);
 
   useEffect(() => {
-    detectMetaMask(); // Check if MetaMask is installed
+    detectMetaMask();
   }, []);
 
   const detectMetaMask = async () => {
     try {
       const ethereumProvider = await detectEthereumProvider();
-      if (ethereumProvider) {
-        setMetamaskInstalled(true);
-      } else {
-        setMetamaskInstalled(false);
+      setMetamaskInstalled(Boolean(ethereumProvider));
+      if (!ethereumProvider) {
         throw new Error("MetaMask is not installed. Please install MetaMask and try again.");
       }
     } catch (error) {
@@ -54,7 +51,7 @@ export const TransactionProvider = ({ children }) => {
 
   const connectWallet = async () => {
     try {
-      if (metamaskInstalled) { // Only initialize if MetaMask is installed
+      if (metamaskInstalled) {
         await initializeProvider();
       } else {
         throw new Error("MetaMask is not installed. Please install MetaMask and try again.");
@@ -66,7 +63,8 @@ export const TransactionProvider = ({ children }) => {
 
   const purchaseArt = async () => {
     try {
-      await contract.purchaseArt({ value: contract.price });
+      const price = await contract.price(); // Ensure price is retrieved as a BigNumber
+      await contract.purchaseArt({ value: price });
       console.log("Art purchased successfully.");
     } catch (error) {
       console.error("Failed to purchase art:", error);
@@ -91,7 +89,16 @@ export const TransactionProvider = ({ children }) => {
 
   return (
     <TransactionContext.Provider
-      value={{ provider, signer, contract, currentAccount, connectWallet, purchaseArt, confirmPurchase, disconnectWallet }}
+      value={{
+        provider,
+        signer,
+        contract,
+        currentAccount,
+        connectWallet,
+        purchaseArt,
+        confirmPurchase,
+        disconnectWallet,
+      }}
     >
       {children}
     </TransactionContext.Provider>
